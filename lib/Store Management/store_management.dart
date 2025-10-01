@@ -1,46 +1,40 @@
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:landing_page/Store%20Management/video_management_page.dart';
 import 'package:landing_page/role_magagement.dart';
-import 'package:landing_page/system%20Management/configuration_Management.dart';
 import 'package:landing_page/system%20Management/log_management.dart';
 import 'package:landing_page/system%20Management/upload_management.dart';
 import 'package:landing_page/upload_screen.dart';
 
-import 'administrator_screem.dart';
-import 'node_management_page.dart';
-
 
 /// ===================== DASHBOARD PAGE =====================
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+class StoreManagement extends StatefulWidget {
+  const StoreManagement({super.key});
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<StoreManagement> createState() => _StoreManagementState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _StoreManagementState extends State<StoreManagement> {
   int selectedIndex = 0;
 
   // Sidebar titles + icons
   final List<Map<String, dynamic>> menuItems = [
-    {'title': 'Administrator Management', 'icon': Icons.admin_panel_settings},
-    {'title': 'Role Management', 'icon': Icons.people},
-    {'title': 'Menu Management', 'icon': Icons.menu},
-    {
-      'title': 'Node Management',
-      'icon': Icons.upload,
-      // 'children': [
-      //   {'title': 'Upload File'},
-      //   {'title': 'Upload Logs'},
-      //   {'title': 'Upload Reports'},
-      //   {'title': 'Upload Settings'},
-      // ]
-    },
-    {'title': 'Configuration Management', 'icon': Icons.settings},
-    {'title': 'Upload Management', 'icon': Icons.upload},
-    {'title': 'Quick Access', 'icon': Icons.flash_on},
-    {'title': 'Log Management', 'icon': Icons.list_alt},
+    {'title': 'Video classification', 'icon': Icons.admin_panel_settings},
+    {'title': 'Video Management', 'icon': Icons.people},
+    {'title': 'video sharing', 'icon': Icons.menu},
+    {'title': 'Number of searches', 'icon': Icons.settings},
+    {'title': 'Gathering Speectations Management', 'icon': Icons.upload},
+    {'title': 'Dating Management', 'icon': Icons.flash_on},
+    {'title': 'Live Steraming management', 'icon': Icons.list_alt},
+    {'title': 'Pharmacy Management', 'icon': Icons.list_alt},
+    {'title': 'Product Management', 'icon': Icons.list_alt},
+    {'title': 'Channel Management', 'icon': Icons.list_alt},
+    {'title': 'Channel Summary', 'icon': Icons.list_alt},
+    {'title': 'Product Summary', 'icon': Icons.list_alt},
+    {'title': 'Click on the trend line', 'icon': Icons.list_alt},
   ];
 
   @override
@@ -65,11 +59,11 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildContent(int index) {
     if (index == 0) {
       // 👉 প্রথম মেনু => Administrator Dashboard
-      return const AdminDashboardContent();
+      // return const AdminDashboardContent();
     }
     else if (index == 1) {
       // 👉 তৃতীয় মেনু => Upload Page
-      return const RoleManagementPage();
+      return const VideoManagementPage();
     }
     else if (index == 2) {
       // 👉 তৃতীয় মেনু => Upload Page
@@ -77,11 +71,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
     else if (index == 3) {
       // 👉 তৃতীয় মেনু => Upload Page
-      return const NodeManagementPage();
-    }
-    else if (index == 4) {
-      // 👉 তৃতীয় মেনু => Upload Page
-      return const ConfigManagementPage();
+      // return const NodeManagementPage();
     }
     else if (index == 5) {
       // 👉 তৃতীয় মেনু => Upload Page
