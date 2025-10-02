@@ -8,6 +8,7 @@ import 'package:landing_page/system%20Management/log_management.dart';
 import 'package:landing_page/system%20Management/upload_management.dart';
 import 'package:landing_page/upload_screen.dart';
 
+import 'Store Management/quick_access.dart';
 import 'administrator_screem.dart';
 import 'node_management_page.dart';
 
@@ -65,7 +66,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget _buildContent(int index) {
     if (index == 0) {
       // 👉 প্রথম মেনু => Administrator Dashboard
-      return const AdminDashboardContent();
+      return const DashboardPageScreen();
     }
     else if (index == 1) {
       // 👉 তৃতীয় মেনু => Upload Page
@@ -86,6 +87,10 @@ class _DashboardPageState extends State<DashboardPage> {
     else if (index == 5) {
       // 👉 তৃতীয় মেনু => Upload Page
       return const UploadManagementPage();
+    }
+    else if (index == 6) {
+      // 👉 তৃতীয় মেনু => Upload Page
+      return const AdminDesignPage();
     }
     else if (index == 7) {
       // 👉 তৃতীয় মেনু => Upload Page
