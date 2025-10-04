@@ -8,6 +8,7 @@ import 'package:landing_page/system%20Management/log_management.dart';
 import 'package:landing_page/system%20Management/upload_management.dart';
 import 'package:landing_page/upload_screen.dart';
 
+import 'Store Management/administrator_management.dart';
 import 'Store Management/quick_access.dart';
 import 'administrator_screem.dart';
 import 'node_management_page.dart';
@@ -25,6 +26,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   // Sidebar titles + icons
   final List<Map<String, dynamic>> menuItems = [
+    {'title': 'Admin Dashboard', 'icon': Icons.dashboard},
     {'title': 'Administrator Management', 'icon': Icons.admin_panel_settings},
     {'title': 'Role Management', 'icon': Icons.people},
     {'title': 'Menu Management', 'icon': Icons.menu},
@@ -67,32 +69,37 @@ class _DashboardPageState extends State<DashboardPage> {
     if (index == 0) {
       // 👉 প্রথম মেনু => Administrator Dashboard
       return const DashboardPageScreen();
+
     }
     else if (index == 1) {
       // 👉 তৃতীয় মেনু => Upload Page
-      return const RoleManagementPage();
+      return const AdministratorManagement();
     }
     else if (index == 2) {
       // 👉 তৃতীয় মেনু => Upload Page
-      return const UploadPage();
+      return const RoleManagementPage();
     }
     else if (index == 3) {
       // 👉 তৃতীয় মেনু => Upload Page
-      return const NodeManagementPage();
+      return const UploadPage();
     }
     else if (index == 4) {
       // 👉 তৃতীয় মেনু => Upload Page
-      return const ConfigManagementPage();
+      return const NodeManagementPage();
     }
     else if (index == 5) {
       // 👉 তৃতীয় মেনু => Upload Page
-      return const UploadManagementPage();
+      return const ConfigManagementPage();
     }
     else if (index == 6) {
       // 👉 তৃতীয় মেনু => Upload Page
-      return const AdminDesignPage();
+      return const UploadManagementPage();
     }
     else if (index == 7) {
+      // 👉 তৃতীয় মেনু => Upload Page
+      return const AdminDesignPage();
+    }
+    else if (index == 8) {
       // 👉 তৃতীয় মেনু => Upload Page
       return const LogManagementPage();
     }

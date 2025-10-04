@@ -5,6 +5,7 @@
  import 'dart:html' as html;
  import 'package:flutter/material.dart';
 ///
+String url='http://192.168.0.247:8080';
 class UploadPage extends StatefulWidget {
   const UploadPage({super.key});
   @override
@@ -31,7 +32,7 @@ class _UploadPageState extends State<UploadPage> {
       final endDate =
           "${_selectedRange!.end.year}-${_selectedRange!.end.month.toString().padLeft(2, '0')}-${_selectedRange!.end.day.toString().padLeft(2, '0')}";
       final url =
-          'http://192.168.0.202:8080/videos?start_date=$startDate&end_date=$endDate';
+          'http://192.168.0.247:8080/videos?start_date=$startDate&end_date=$endDate';
 
       final request = await html.HttpRequest.request(url, method: 'GET');
       if (request.status == 200) {
@@ -193,7 +194,7 @@ class _UploadPageState extends State<UploadPage> {
                   setStateSB(() => isSaving = true);
 
                   final uri = Uri.parse(
-                      'http://192.168.0.202:8080/admin/video/${item['id']}');
+                      '$url/admin/video/${item['id']}');
                   final request = html.HttpRequest();
                   final formData = html.FormData();
                   formData.append('title', titleCtrl.text);
@@ -257,7 +258,7 @@ class _UploadPageState extends State<UploadPage> {
 
     try {
       final uri =
-      Uri.parse('http://192.168.0.202:8080/admin/video/${item['id']}');
+      Uri.parse('$url/admin/video/${item['id']}');
       final request = html.HttpRequest();
       request.open('DELETE', uri.toString());
 
@@ -362,6 +363,7 @@ class _UploadPageState extends State<UploadPage> {
       rows: List<DataRow>.generate(_videosList.length, (index) {
         final item = _videosList[index];
         final title = item['title']?.toString() ?? '';
+        final image = item['image_url']?.toString() ?? '';
         final filename = item['original_filename']?.toString() ?? '';
         final videoUrl = item['video_url']?.toString() ??
             item['video_link']?.toString() ??
@@ -389,22 +391,63 @@ class _UploadPageState extends State<UploadPage> {
             DataCell(Text(title)),
             DataCell(Text(filename)),
             DataCell(
-              InkWell(
-                onTap: () {
-                  if (videoUrl.isNotEmpty) {
-                    html.window.open(videoUrl, '_blank');
-                  }
-                },
-                child: Text(
-                  videoUrl.isEmpty ? 'No Link' : 'Open',
-                  style: TextStyle(
-                      color: videoUrl.isEmpty ? Colors.grey : Colors.blue,
-                      decoration: videoUrl.isEmpty
-                          ? TextDecoration.none
-                          : TextDecoration.underline),
-                ),
+              image.isNotEmpty
+                  ? Padding(
+                    padding: const EdgeInsets.only(top: 2,bottom: 2),
+                    child: Image.network(
+                                    image,
+                                    height: 50,
+                                    width: 50,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child; // loaded হলে image show
+                    return SizedBox(
+                      height: 50,
+                      width: 50,
+                      child: Center(
+                        child: SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 50,
+                      width: 50,
+                      color: Colors.grey.shade200, // blank background
+                    );
+                                    },
+                                  ),
+                  )
+                  : Container(
+                height: 50,
+                width: 50,
+                color: Colors.grey.shade200, // blank if image url empty
               ),
             ),
+
+            // DataCell(
+            //   InkWell(
+            //     onTap: () {
+            //       if (videoUrl.isNotEmpty) {
+            //         html.window.open(videoUrl, '_blank');
+            //       }
+            //     },
+            //     child:  Image.network(image,height: 50,width: 50,)
+            //  // child:
+            //  // Text(
+            //  //      videoUrl.isEmpty ? 'No Link' : 'Open',
+            //  //      style: TextStyle(
+            //  //          color: videoUrl.isEmpty ? Colors.grey : Colors.blue,
+            //  //          decoration: videoUrl.isEmpty
+            //  //              ? TextDecoration.none
+            //  //              : TextDecoration.underline),
+            //  //    ),
+            //   ),
+            // ),
             DataCell(Text(timestampsLength.toString())),
             DataCell(Row(
               children: [
@@ -590,7 +633,7 @@ class _UploadPopupState extends State<UploadPopup> {
       _message = '';
     });
 
-    final uri = Uri.parse('http://192.168.0.202:8080/admin/upload');
+    final uri = Uri.parse('$url/admin/upload');
     final request = html.HttpRequest();
     final formData = html.FormData();
 
