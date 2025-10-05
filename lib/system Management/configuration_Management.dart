@@ -1,4 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 
 class ConfigManagementPage extends StatefulWidget {
   const ConfigManagementPage({super.key});
@@ -7,150 +14,283 @@ class ConfigManagementPage extends StatefulWidget {
   State<ConfigManagementPage> createState() => _ConfigManagementPageState();
 }
 
-class _ConfigManagementPageState extends State<ConfigManagementPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _ConfigManagementPageState extends State<ConfigManagementPage> {
+  final ImagePicker _picker = ImagePicker();
+  XFile? selectedImage;
+  Uint8List? webImage;
+
+  final String uploadUrl = "http://192.168.0.247:8080/admin/upload_image";
+
+  // 🔹 All controllers
+  final siteNameCtrl = TextEditingController();
+  final siteUrlCtrl = TextEditingController();
+  final indexNumberCtrl = TextEditingController();
+  final registrationCtrl = TextEditingController();
+  final domainCtrl = TextEditingController();
+  final copyrightCtrl = TextEditingController();
+  final titleCtrl = TextEditingController();
+
+  /// 🔹 Load config.json (optional)
+  Future<void> _loadConfig() async {
+    try {
+      final jsonString = await rootBundle.loadString('assets/config.json');
+      final data = jsonDecode(jsonString);
+
+      setState(() {
+        siteNameCtrl.text = data['site_name'] ?? '';
+        siteUrlCtrl.text = data['site_url'] ?? '';
+        indexNumberCtrl.text = data['index_number'] ?? '';
+        registrationCtrl.text = data['registration_information'] ?? '';
+        domainCtrl.text = data['domain_name'] ?? '';
+        copyrightCtrl.text = data['copyright_info'] ?? '';
+        titleCtrl.text = data['title_name'] ?? '';
+      });
+    } catch (e) {
+      _showSnack("⚠️ Failed to load config.json: $e");
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    _loadConfig();
+  }
+
+  /// Pick image
+  Future<void> pickImage() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      if (kIsWeb) {
+        final bytes = await picked.readAsBytes();
+        setState(() {
+          selectedImage = picked;
+          webImage = bytes;
+        });
+      } else {
+        setState(() {
+          selectedImage = picked;
+        });
+      }
+    }
+  }
+
+  /// Upload API
+  Future<void> uploadForm() async {
+    if (selectedImage == null) {
+      _showSnack("⚠️ Please select an image first");
+      return;
+    }
+
+    try {
+      var uri = Uri.parse(uploadUrl);
+      var request = http.MultipartRequest('POST', uri);
+
+      // ✅ Add image file
+      if (kIsWeb) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'image',
+          webImage!,
+          filename: selectedImage!.name,
+        ));
+      } else {
+        request.files.add(await http.MultipartFile.fromPath(
+          'image',
+          selectedImage!.path,
+          filename: selectedImage!.name,
+        ));
+      }
+
+      // ✅ Add all fields
+      request.fields.addAll({
+        'site_name': siteNameCtrl.text,
+        'site_url': siteUrlCtrl.text,
+        'index_number': indexNumberCtrl.text,
+        'registration_information': registrationCtrl.text,
+        'domain_name': domainCtrl.text,
+        'copyright_info': copyrightCtrl.text,
+        'original_filename': selectedImage!.name, // ✅ both same
+        'title': titleCtrl.text, // ✅ both same
+      });
+
+      // ✅ Send request
+      var response = await request.send();
+      var respStr = await response.stream.bytesToString();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        _showSnack("✅ Upload successful");
+
+        setState(() {
+          selectedImage = null;
+          webImage = null;
+          siteNameCtrl.clear();
+          siteUrlCtrl.clear();
+          indexNumberCtrl.clear();
+          registrationCtrl.clear();
+          domainCtrl.clear();
+          copyrightCtrl.clear();
+          titleCtrl.clear();
+        });
+      } else {
+        _showSnack("❌ Upload failed (${response.statusCode}) → $respStr");
+      }
+    } catch (e) {
+      _showSnack("⚠️ Error: $e");
+    }
+  }
+
+  /// SnackBar
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), duration: const Duration(seconds: 2)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            /// 🔹 TOP TABS
-            Container(
-              color: Colors.grey.shade100,
-              child: TabBar(
-                controller: _tabController,
-                indicatorColor: Colors.blue,
-                labelColor: Colors.black,
-                unselectedLabelColor: Colors.grey,
-                tabs: const [
-                  Tab(text: "Website settings"),
-                  Tab(text: "LOGO configuration"),
-                  Tab(text: "Upload configuration"),
-                  Tab(text: "Return link"),
-                ],
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        title: const Text("Website Settings Upload"),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0.5,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.15),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _sectionTitle("Site Name"),
+              _inputField(siteNameCtrl, "Enter the site name."),
+              const SizedBox(height: 20),
 
-            /// 🔹 TAB CONTENT
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
+              _sectionTitle("Site URL"),
+              _inputField(siteUrlCtrl, "Enter the website URL."),
+              const SizedBox(height: 20),
+
+              _sectionTitle("version_information"),
+              _inputField(indexNumberCtrl, "Enter index number."),
+              const SizedBox(height: 20),
+
+              _sectionTitle("Browser Icon"),
+              Row(
                 children: [
-                  _websiteSettings(),
-                  _logoConfig(),
-                  _uploadConfig(),
-                  _returnLink(),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: selectedImage == null
+                        ? const Icon(Icons.image, color: Colors.grey)
+                        : (kIsWeb
+                        ? Image.memory(webImage!, fit: BoxFit.cover)
+                        : Image.file(File(selectedImage!.path),
+                        fit: BoxFit.cover)),
+                  ),
+                  const SizedBox(width: 16),
+                  ElevatedButton(
+                    onPressed: pickImage,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade600,
+                    ),
+                    child: const Text("Choose"),
+                  ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              _sectionTitle("Title"),
+              _inputField(
+                  titleCtrl, "Enter your registration information."),
+              const SizedBox(height: 20),
+
+              _sectionTitle("Registration Information"),
+              _inputField(
+                  registrationCtrl, "Enter your registration information."),
+              const SizedBox(height: 20),
+
+              _sectionTitle("Site Domain"),
+              _inputField(domainCtrl, "Enter your domain name."),
+              const SizedBox(height: 20),
+
+              _sectionTitle("Copyright Information"),
+              _inputField(copyrightCtrl, "Enter copyright info."),
+              const SizedBox(height: 30),
+
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: uploadForm,
+                  icon: const Icon(Icons.cloud_upload),
+                  label: const Text("Submit"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade600,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 14),
+                    textStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  /// ==================== 1. Website Settings Screen ====================
-  Widget _websiteSettings() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildFormField("Site Name", "54M_test Back-end System"),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(child: _buildFormField("Browser icon", "/favicon.png")),
-              const SizedBox(width: 16),
-              Container(
-                height: 60,
-                width: 60,
-                color: Colors.grey.shade200,
-                child: const Center(child: Text("IMG")),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: const Text("On the land")),
-              const SizedBox(width: 8),
-              ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                  child: const Text("Choice")),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildFormField("Version Information", "2.7.6"),
-          const SizedBox(height: 20),
-          _buildFormField("Cloud transcoding URL", "Fill in yours"),
-          const SizedBox(height: 20),
-          _buildFormField("Registration Information", "Fill in yours"),
-          const SizedBox(height: 20),
-          _buildFormField("Site Title", "54m"),
-          const SizedBox(height: 20),
-          _buildFormField("Site domain names", "54m.com"),
-          const SizedBox(height: 20),
-          _buildFormField("Copyright Information",
-              "Copyright© {{\$date}} (\$domain) All Rights Reserved"),
-        ],
+  Widget _sectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.black87,
+          fontSize: 15,
+        ),
       ),
     );
   }
 
-  /// ==================== 2. Logo Config Screen ====================
-  Widget _logoConfig() {
-    return const Center(
-      child: Text("LOGO Configuration Page",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  /// ==================== 3. Upload Config Screen ====================
-  Widget _uploadConfig() {
-    return const Center(
-      child: Text("Upload Configuration Page",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  /// ==================== 4. Return Link Screen ====================
-  Widget _returnLink() {
-    return const Center(
-      child: Text("Return Link Page",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-    );
-  }
-
-  /// 🔹 Form Field Builder
-  Widget _buildFormField(String label, String hint) {
+  Widget _inputField(TextEditingController controller, String hint) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: const TextStyle(
-                fontWeight: FontWeight.bold, fontSize: 14, color: Colors.black)),
-        const SizedBox(height: 6),
         TextField(
+          controller: controller,
           decoration: InputDecoration(
             hintText: hint,
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: Colors.grey),
             ),
-            isDense: true,
             contentPadding:
-            const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          hint,
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
         ),
       ],
     );
